@@ -11,7 +11,6 @@
 #include "ui_mainwindow.h"
 #include "Databinding.h"
 #include "Settings.h"
-#include "scenegraph/SceneviewScene.h"
 #include "camera/CamtransCamera.h"
 #include "CS123XmlSceneParser.h"
 #include <QSettings>
@@ -83,48 +82,6 @@ void MainWindow::dataBind()
     // Brush dock
 
 #define BIND(b) { DataBinding *_b = (b); m_bindings.push_back(_b); assert(connect(_b, SIGNAL(dataChanged()), this, SLOT(settingsChanged()))); }
-
-    // Shapes dock
-    BIND( BoolBinding::bindCheckbox(ui->showSceneviewInstead, settings.useSceneviewScene) )
-    BIND( ChoiceBinding::bindRadioButtons(NUM_SHAPE_TYPES, settings.shapeType,
-                                    ui->shapeTypeCube,
-                                    ui->shapeTypeCone,
-                                    ui->shapeTypeSphere,
-                                    ui->shapeTypeCylinder,
-                                    ui->shapeTypeSpecial1,
-                                    ui->shapeTypeSpecial2,
-                                    ui->shapeTypeSpecial3) )
-    BIND( IntBinding::bindSliderAndTextbox(ui->shapeParameterSlider1, ui->shapeParameterTextbox1, settings.shapeParameter1, 1, 100) )
-    BIND( IntBinding::bindSliderAndTextbox(ui->shapeParameterSlider2, ui->shapeParameterTextbox2, settings.shapeParameter2, 1, 100) )
-    BIND( FloatBinding::bindSliderAndTextbox(ui->shapeParameterSlider3, ui->shapeParameterTextbox3, settings.shapeParameter3, 1, 100) )
-    BIND( BoolBinding::bindCheckbox(ui->useLightingCheckbox, settings.useLighting) )
-    BIND( BoolBinding::bindCheckbox(ui->drawWireframeCheckbox, settings.drawWireframe) )
-    BIND( BoolBinding::bindCheckbox(ui->drawNormalsCheckbox, settings.drawNormals) )
-
-    // Camtrans dock
-    BIND( BoolBinding::bindCheckbox(ui->cameraOrbitCheckbox, settings.useOrbitCamera) )
-    BIND( FloatBinding::bindDial(ui->transX, settings.cameraPosX, -2, 2, true) )
-    BIND( FloatBinding::bindDial(ui->transY, settings.cameraPosY, -2, 2, true) )
-    BIND( FloatBinding::bindDial(ui->transZ, settings.cameraPosZ, -2, 2, true) )
-    BIND( FloatBinding::bindDial(ui->rotU,   settings.cameraRotU, -20, 20, true) )
-    BIND( FloatBinding::bindDial(ui->rotV,   settings.cameraRotV, -20, 20, true) )
-    BIND( FloatBinding::bindDial(ui->rotN,   settings.cameraRotN, -180, 180, false) )
-    BIND( FloatBinding::bindSliderAndTextbox(ui->cameraFovSlider, ui->cameraFovTextbox, settings.cameraFov, 1, 179) )
-    BIND( FloatBinding::bindSliderAndTextbox(ui->cameraNearSlider, ui->cameraNearTextbox, settings.cameraNear, 0.1, 50) )
-    BIND( FloatBinding::bindSliderAndTextbox(ui->cameraFarSlider, ui->cameraFarTextbox, settings.cameraFar, 0.1, 50) )
-
-    // Ray dock
-    BIND( BoolBinding::bindCheckbox(ui->raySuperSamping,          settings.useSuperSampling) )
-    BIND( IntBinding::bindTextbox( ui->raySuperSamplesTextbox,   settings.numSuperSamples) )
-    BIND( BoolBinding::bindCheckbox(ui->rayAntiAliasing,          settings.useAntiAliasing) )
-    BIND( BoolBinding::bindCheckbox(ui->rayShadows,               settings.useShadows) )
-    BIND( BoolBinding::bindCheckbox(ui->rayTextureMapping,        settings.useTextureMapping) )
-    BIND( BoolBinding::bindCheckbox(ui->rayReflection,            settings.useReflection) )
-    BIND( BoolBinding::bindCheckbox(ui->rayRefraction,            settings.useRefraction) )
-    BIND( BoolBinding::bindCheckbox(ui->rayPointLights,           settings.usePointLights) )
-    BIND( BoolBinding::bindCheckbox(ui->rayDirectionalLights,     settings.useDirectionalLights) )
-    BIND( BoolBinding::bindCheckbox(ui->raySpotLights,            settings.useSpotLights) )
-    BIND( BoolBinding::bindCheckbox(ui->rayMultiThreading,        settings.useMultiThreading) )
 
     BIND( ChoiceBinding::bindTabs(ui->tabWidget, settings.currentTab) )
 

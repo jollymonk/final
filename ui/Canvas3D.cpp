@@ -4,7 +4,6 @@
 #include <typeinfo>
 #include <Camera.h>
 #include <OrbitingCamera.h>
-#include <OpenGLScene.h>
 
 #ifdef __APPLE__
 #include <OpenGL/glu.h>

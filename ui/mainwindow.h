@@ -60,9 +60,6 @@ public slots:
     //! Used internally to keep data bindings and the user interface in sync.
     void settingsChanged();
 
-    //! Displays a dialog box to open a 2D image or 3D scene file.
-    void fileOpen();
-
     //! Displays a dialog box to save the current 2D image. Can be extended (for extra credit) to save the current 3D scene.
     void fileSave();
 

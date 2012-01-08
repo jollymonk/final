@@ -13,9 +13,6 @@ SOURCES += \
     lib/tinystr.cpp \
     lib/CS123XmlSceneParser.cpp \
     math/CS123Matrix.cpp \
-    scenegraph/SceneviewScene.cpp \
-    scenegraph/Scene.cpp \
-    scenegraph/OpenGLScene.cpp \
     ui/SupportCanvas3D.cpp \
     ui/SupportCanvas2D.cpp \
     ui/Settings.cpp \
@@ -46,9 +43,6 @@ HEADERS += \
     math/CS123Vector.h \
     math/CS123Vector.inl \
     math/TA_Tester.h \
-    scenegraph/SceneviewScene.h \
-    scenegraph/Scene.h \
-    scenegraph/OpenGLScene.h \
     ui/SupportCanvas3D.h \
     ui/SupportCanvas2D.h \
     ui/Settings.h \

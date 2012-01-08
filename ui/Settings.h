@@ -83,20 +83,6 @@ enum DrawType
 };
 
 
-
-//! Enumeration values for the Shapes that the user can select in the GUI.
-enum ShapeType
-{
-    SHAPE_CUBE,
-    SHAPE_CONE,
-    SHAPE_SPHERE,
-    SHAPE_CYLINDER,
-    //SHAPE_SPECIAL_1,
-    //SHAPE_SPECIAL_2,
-    //SHAPE_SPECIAL_3,
-    NUM_SHAPE_TYPES
-};
-
 /*! Enumeration values for the different interaction modes that the user
   can use. You'll implement these in the Modelling lab. */
 enum InteractionMode
@@ -150,16 +136,6 @@ struct Settings
     //! Saves the current settings to disk.
     void saveSettings();
 
-    // Shapes
-    bool useSceneviewScene;
-    int shapeType;              /// Selected shape type @see ShapeType
-    int shapeParameter1;
-    int shapeParameter2;
-    REAL shapeParameter3;
-    bool useLighting;           /// Enable default lighting
-    bool drawWireframe;         /// Draw wireframe only
-    bool drawNormals;           /// Turn normals on and off
-
     // Camtrans
     bool useOrbitCamera;        /// Use the built-in orbiting camera instead of the Camtrans perspective camera
     REAL cameraPosX;
@@ -174,19 +150,6 @@ struct Settings
 
     // Modeler
     int objTool;                /// The currently selected modeler tool. @see InteractionMode
-
-    // Ray
-    bool useSuperSampling;      /// Enable or disable super-sampling.
-    int numSuperSamples;        /// Controls the number of samples per pixel.
-    bool useAntiAliasing;       /// Enable or disable anti-aliasing.
-    bool useShadows;            /// Enable or disable shadows.
-    bool useTextureMapping;     /// Enable or disable texture mapping.
-    bool useReflection;         /// Enable or disable reflection.
-    bool useRefraction;         /// Enable or disable refraction (this is extra credit).
-    bool useMultiThreading;     /// Enable or disable multi-threading (extra credit).
-    bool usePointLights;        /// Enable or disable point lighting.
-    bool useDirectionalLights;  /// Enable or disable directional lighting (extra credit).
-    bool useSpotLights;         /// Enable or disable spot lights (extra credit).
 
     int getSceneMode();
     int getCameraMode();

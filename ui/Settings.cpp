@@ -43,33 +43,11 @@ void Settings::loadSettingsOrDefaults()
 
     draw_type = DRAW_PARTICLES;
 
-    // Shapes
-    shapeType = s.value("shapeType", SHAPE_SPHERE).toInt();
-    shapeParameter1 = s.value("shapeParameter1", 15).toInt();
-    shapeParameter2 = s.value("shapeParameter2", 15).toInt();
-    shapeParameter3 = s.value("shapeParameter3", 15).toDouble();
-    useLighting = s.value("useLighting", true).toBool();
-    drawWireframe = s.value("drawWireframe", true).toBool();
-    drawNormals = s.value("drawNormals", false).toBool();
-
     // Camtrans
     useOrbitCamera = s.value("useOrbitCamera", true).toBool();
     cameraFov = s.value("cameraFov", 55).toDouble();
     cameraNear = s.value("cameraNear", 0.1).toDouble();
     cameraFar = s.value("cameraFar", 50).toDouble();
-
-    // Ray
-    useSuperSampling = s.value("useSuperSampling", false).toBool();
-    numSuperSamples = s.value("numSuperSamples", 2).toInt();
-    useAntiAliasing = s.value("useAntiAliasing", true).toBool();
-    useShadows = s.value("useShadows", false).toBool();
-    useTextureMapping = s.value("useTextureMapping", false).toBool();
-    useReflection = s.value("useReflection", false).toBool();
-    useRefraction = s.value("useRefraction", false).toBool();
-    useMultiThreading = s.value("useMultiThreading", true).toBool();
-    usePointLights = s.value("usePointLights", true).toBool();
-    useDirectionalLights = s.value("useDirectionalLights", true).toBool();
-    useSpotLights = s.value("useSpotLights", true).toBool();
 
     currentTab = s.value("currentTab", TAB_2D).toBool();
 
@@ -98,14 +76,6 @@ void Settings::saveSettings()
     s.setValue("cameraFar", cameraFar);
 
     s.setValue("currentTab", currentTab);
-}
-
-int Settings::getSceneMode()
-{
-    if (this->useSceneviewScene)
-        return SCENEMODE_SCENEVIEW;
-    else
-        return SCENEMODE_SHAPES;
 }
 
 int Settings::getCameraMode()

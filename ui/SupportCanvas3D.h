@@ -12,9 +12,6 @@
 #include <CS123Algebra.h>
 
 class Camera;
-class OpenGLScene;
-class ShapesScene;
-class SceneviewScene;
 class OrbitingCamera;
 class CamtransCamera;
 
@@ -49,15 +46,6 @@ public:
 
     /*! @brief Returns a pointer to the camtrans camera. */
     CamtransCamera *getCamtransCamera();
-
-    /*! @brief Returs a pointer to the current scene. If no scene is loaded,
-      this function returns NULL.
-      */
-    OpenGLScene *getScene() { return m_scene; }
-
-    /*! @brief Sets the current scene. This class does takes ownership of the
-      specified scene (you are NOT responsible for deleting it). */
-    void setScene(OpenGLScene *scene);
 
     /*! @brief Copies pixels from the OpenGL render buffer into a standard
       bitmap image, using row-major order and BGRA data format. */
@@ -104,7 +92,6 @@ protected:
 
 private:
     Vector4     m_cameraEye;
-    OpenGLScene *m_scene;
     bool        m_isDragging;
 
     CamtransCamera *m_defaultPerspectiveCamera;

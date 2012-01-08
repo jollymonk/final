@@ -1,5 +1,4 @@
 #include "SupportCanvas3D.h"
-#include "SceneviewScene.h"
 #include "OrbitingCamera.h"
 #include "CamtransCamera.h"
 #include "Settings.h"
@@ -14,7 +13,6 @@
 SupportCanvas3D::SupportCanvas3D(QWidget *parent) : QGLWidget(QGLFormat(QGL::SampleBuffers), parent)
 {
     m_isDragging = false;
-    m_scene = NULL;
 
     m_defaultPerspectiveCamera = new CamtransCamera;
 
@@ -29,7 +27,6 @@ SupportCanvas3D::~SupportCanvas3D()
 {
     delete m_defaultPerspectiveCamera;
     delete m_defaultOrbitingCamera;
-    delete m_scene;
 }
 
 Camera *SupportCanvas3D::getCamera()
@@ -60,28 +57,10 @@ CamtransCamera *SupportCanvas3D::getCamtransCamera()
 
 void SupportCanvas3D::settingsChanged()
 {
-    SceneviewScene *sv;
-
-    switch (settings.getSceneMode())
-    {
-
-    case SCENEMODE_SCENEVIEW:
-        // Make sure we are showing a SceneviewScene.
-        sv = dynamic_cast<SceneviewScene *>(this->getScene());
-        if (!sv) setScene(NULL);
-        break;
-    }
-
     //if(m_scene)
     //    m_scene->setCamera(getCamera());
 
     update(); /* repaint the scene */
-}
-
-void SupportCanvas3D::setScene(OpenGLScene *scene)
-{
-    delete m_scene;
-    m_scene = scene;
 }
 
 void SupportCanvas3D::copyPixels(int width, int height, BGRA *data)

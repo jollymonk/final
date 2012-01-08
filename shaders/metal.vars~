@@ -1,0 +1,8 @@
+<uniforms>
+ <var type="samplerCube" name="envMap">/home/mjunck/course/cs123/final/final/images/astra/posy.jpg:/home/mjunck/course/cs123/final/final/images/astra/negy.jpg:/home/mjunck/course/cs123/final/final/images/astra/negx.jpg:/home/mjunck/course/cs123/final/final/images/astra/posx.jpg:/home/mjunck/course/cs123/final/final/images/astra/posz.jpg:/home/mjunck/course/cs123/final/final/images/astra/negz.jpg</var>
+ <var type="float" name="r0">0.7</var>
+ <var type="vec4" name="ambient">0.7, 0.7, 0.7, 1</var>
+ <var type="vec4" name="diffuse">0.7, 0.7, 0.7, 0</var>
+ <var type="vec4" name="specular">0.9, 0.9, 0.9, 0</var>
+ <var type="float" name="m">0.55</var>
+</uniforms>

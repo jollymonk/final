@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>600</width>
+    <height>2878</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>CS 123: Introduction to Computer Graphics</string>
+  </property>
+  <property name="dockNestingEnabled">
+   <bool>true</bool>
+  </property>
+  <property name="dockOptions">
+   <set>QMainWindow::AllowNestedDocks|QMainWindow::AllowTabbedDocks|QMainWindow::AnimatedDocks|QMainWindow::ForceTabbedDocks|QMainWindow::VerticalTabs</set>
+  </property>
+  <widget class="QWidget" name="centralWidget">
+   <widget class="QTabWidget" name="tabWidget">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>0</y>
+      <width>511</width>
+      <height>42</height>
+     </rect>
+    </property>
+    <property name="tabPosition">
+     <enum>QTabWidget::North</enum>
+    </property>
+    <property name="currentIndex">
+     <number>0</number>
+    </property>
+    <widget class="QWidget" name="tab2D">
+     <attribute name="title">
+      <string>2D</string>
+     </attribute>
+     <layout class="QGridLayout" name="gridLayout_11">
+      <property name="margin">
+       <number>0</number>
+      </property>
+     </layout>
+    </widget>
+    <widget class="QWidget" name="tab3D">
+     <attribute name="title">
+      <string>3D</string>
+     </attribute>
+     <layout class="QGridLayout" name="gridLayout_12">
+      <property name="margin">
+       <number>0</number>
+      </property>
+      <item row="0" column="0">
+       <widget class="Canvas3D" name="canvas3D" native="true"/>
+      </item>
+     </layout>
+    </widget>
+   </widget>
+   <widget class="QGroupBox" name="groupBox">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>50</y>
+      <width>120</width>
+      <height>80</height>
+     </rect>
+    </property>
+    <property name="title">
+     <string>GroupBox</string>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>600</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>&amp;File</string>
+    </property>
+    <addaction name="actionNew"/>
+    <addaction name="actionOpen"/>
+    <addaction name="actionSave"/>
+    <addaction name="actionRevert"/>
+    <addaction name="actionCopy3Dto2D"/>
+    <addaction name="separator"/>
+    <addaction name="actionQuit"/>
+   </widget>
+   <widget class="QMenu" name="menuToolbars">
+    <property name="title">
+     <string>&amp;Toolbars</string>
+    </property>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuToolbars"/>
+  </widget>
+  <action name="actionNew">
+   <property name="text">
+    <string>New</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+N</string>
+   </property>
+  </action>
+  <action name="actionOpen">
+   <property name="text">
+    <string>Open...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
+   </property>
+  </action>
+  <action name="actionSave">
+   <property name="text">
+    <string>Save...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
+   </property>
+  </action>
+  <action name="actionQuit">
+   <property name="text">
+    <string>Quit</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Q</string>
+   </property>
+  </action>
+  <action name="actionRevert">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Revert Image</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+R</string>
+   </property>
+  </action>
+  <action name="actionCopy3Dto2D">
+   <property name="text">
+    <string>Copy 3D tab to 2D tab</string>
+   </property>
+  </action>
+ </widget>
+ <layoutdefault spacing="6" margin="11"/>
+ <customwidgets>
+  <customwidget>
+   <class>Canvas3D</class>
+   <extends>QWidget</extends>
+   <header location="global">Canvas3D.h</header>
+   <container>1</container>
+   <slots>
+    <slot>setCameraAxisX()</slot>
+    <slot>setCameraAxisY()</slot>
+    <slot>setCameraAxisZ()</slot>
+    <slot>setCameraAxonometric()</slot>
+    <slot>updateCameraTranslation()</slot>
+    <slot>updateCameraRotationU()</slot>
+    <slot>updateCameraRotationV()</slot>
+    <slot>updateCameraRotationN()</slot>
+    <slot>updateCameraClip()</slot>
+    <slot>updateCameraHeightAngle()</slot>
+    <slot>resetUpVector()</slot>
+   </slots>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>actionQuit</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>close()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>299</x>
+     <y>199</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+ <slots>
+  <slot>checkAllRayFeatures()</slot>
+  <slot>uncheckAllRayFeatures()</slot>
+  <slot>setAspectRatioText()</slot>
+  <slot>fileNew()</slot>
+  <slot>fileOpen()</slot>
+  <slot>fileSave()</slot>
+  <slot>renderImage()</slot>
+  <slot>cancelRender()</slot>
+  <slot>fileCopy3Dto2D()</slot>
+ </slots>
+</ui>

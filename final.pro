@@ -23,7 +23,6 @@ SOURCES += \
     ui/Databinding.cpp \
     ui/Canvas3D.cpp \
     main.cpp \
-    scenegraph/RayThread.cpp \
     fountain/Emitter.cpp \
     shape/Sphere.cpp \
     shape/Shape.cpp \
@@ -65,8 +64,8 @@ HEADERS += \
     lib/camera.h \
     lib/glm.h
 FORMS += ui/mainwindow.ui
-INCLUDEPATH += camera lib math scenegraph ui
-DEPENDPATH += camera lib math scenegraph ui
+INCLUDEPATH += camera lib math scenegraph ui fountain
+DEPENDPATH += camera lib math scenegraph ui fountain
 DEFINES += TIXML_USE_STL
 OTHER_FILES +=
 

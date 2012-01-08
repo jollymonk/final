@@ -176,14 +176,6 @@ void MainWindow::settingsChanged()
     ui->canvas3D->settingsChanged();
 }
 
-void MainWindow::fileCopy3Dto2D()
-{
-    // Make sure OpenGL gets a chance to redraw
-    ui->tabWidget->setCurrentIndex(TAB_3D);
-    ui->canvas3D->update();
-    QApplication::processEvents();
-}
-
 void MainWindow::fileSave()
 {
 }

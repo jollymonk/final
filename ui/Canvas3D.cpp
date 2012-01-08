@@ -478,7 +478,6 @@ void Canvas3D::paintGL()
 void Canvas3D::tick()
 {
     update();
-    cout << "ticking" << endl;
 }
 
 void Canvas3D::resizeGL(int width, int height)

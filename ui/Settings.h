@@ -18,15 +18,25 @@
 #include <QObject>
 #include <CS123Algebra.h>
 
+//fountain box dimensions
+#define BOX_X_START -2.5          //left wall of box in world coords
+#define BOX_Y_START -1.5          //bottom wall of box in world coords
+#define BOX_Z_START 0.0           //back wall of box in world coords
+#define BOX_WIDTH 5.0
+#define BOX_HEIGHT 3.0
+#define BOX_DEPTH 2.0
+
 // fountain settings
 #define NUM_EMITTERS 400
 #define DROP_FREQ 1
-#define FTN_WIDTH 3.0
-#define FTN_TOP 1.5             //top of fountain in world coords
-#define FTN_BOTTOM -1.9         //bottom of fountain in world coords
-#define FTN_LEFT -1.5           //left wall of fountain in world coords
-#define FTN_DEPTH 0.0           //depth of fountain in world coords
+#define FTN_WIDTH 3.0                       //top of fountain in world coords
+#define FTN_BOTTOM BOX_Y_START + 0.05f       //bottom of fountain in world coords
+#define FTN_LEFT -1.5                       //left wall of fountain in world coords
+#define FTN_TOP BOX_Y_START + BOX_HEIGHT -0.005f
+#define FTN_DEPTH BOX_Z_START + (BOX_DEPTH / 2.0f) + 0.01f
 #define FRAMES_PER_SEC 30.0
+
+#define EPSILON 0.1             //error constant
 
 //camera settings
 #define CAM_MAX_DIST 5.0
@@ -46,7 +56,7 @@
 #define SHAPE_COMPLEXITY_THRESHHOLD 2.0
 
 //interaction settings
-#define CLICK_RADIUS 20
+#define CLICK_RADIUS 0.4
 
 // Enumeration values for the fill modes from which the user can choose in the GUI.
 enum FillMode

@@ -25,15 +25,14 @@
 #include <QWheelEvent>
 #include "lib/glm.h"
 #include "shape/Sphere.h"
+#include "CamtransCamera.h"
 
 Canvas3D::Canvas3D(QWidget *parent) //: SupportCanvas3D(parent)
     : QGLWidget(parent), m_timer(this), m_fps(60.0f), m_increment(0)
 {
     // Set up the camera
-    m_camera.eye.x = 0.0f, m_camera.eye.y = 0.0f, m_camera.eye.z = 5.0f;
-        m_camera.center.x = 0.0f, m_camera.center.y = 0.0f, m_camera.center.z = 0.0f;
-        m_camera.up.x = 0.0f, m_camera.up.y = 1.0f, m_camera.up.z = 0.0f;
-        m_camera.fovy = 45.0f, m_camera.near = 0.02f, m_camera.far = 1000.0f;
+    m_camera = new CamtransCamera;
+
     // Set up 60 FPS draw loop
     connect(&m_timer, SIGNAL(timeout()), this, SLOT(tick()));
 
@@ -46,6 +45,8 @@ Canvas3D::~Canvas3D()
     safeDelete(m_fan_pix);
     safeDelete(m_checkered_pix);
     safeDelete(m_zebra_pix);
+
+    delete m_camera;
 }
 
 
@@ -84,7 +85,7 @@ void Canvas3D::initializeGL()
 
     for (int i = 0; i < NUM_EMITTERS; i++)
     {
-        Emitter *e = new Emitter(x_pos, m_shader_programs, m_skybox, m_cube_map);
+        Emitter *e = new Emitter(x_pos, m_camera, m_shader_programs, m_skybox, m_cube_map);
         m_emitters[i] = e;
         x_pos += width_inc;
     }
@@ -112,6 +113,7 @@ void Canvas3D::initializeGL()
     m_concrete_left_tex_id = loadTexture("../final/images/concrete_composite_left_wall.jpg");
     m_concrete_right_tex_id = loadTexture("../final/images/concrete_composite_right_wall.jpg");
     m_concrete_floor_tex_id = loadTexture("../final/images/concrete_composite_floor.jpg");
+    m_concrete_floor2_tex_id = loadTexture("../final/images/concrete_composite_floor2.jpg");
     m_concrete_ceil_tex_id = loadTexture("../final/images/concrete_composite_ceil.jpg");
     m_lightstrip_tex_id = loadTexture("../final/images/light_strip.jpg");
     m_particle_tex_id = loadTexture("../final/images/particle2.bmp");
@@ -129,7 +131,139 @@ void Canvas3D::initializeGL()
     m_curr_draw_type = settings.draw_type;
 
     updateSettings();
-    updateCamera();
+    updateCamera(width(), height());
+}
+
+void Canvas3D::paintGL()
+{
+    // Get the time in seconds
+    //float time = m_increment++ / (float) m_fps;
+    m_increment++;
+
+    // Clear the color and depth buffers to the current glClearColor
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    paintScene();
+
+    int index, col;
+    int time_inc = (int) m_increment % DROP_FREQ;
+
+    if (time_inc  == 0)
+    {
+        if (settings.fountain_pattern != PATTERN_CONTINUOUS && (m_image != NULL))
+        {
+            const BGRA* pix = (BGRA*) m_image->constBits();
+            //const BGRA* pix = (*m_curr_pix);
+            for (int i = 0; i < NUM_EMITTERS; i++)
+            {
+                if (m_curr_height > 0)
+                {
+                    col = (int) (i * m_img_scale);
+                    index = ((int) m_curr_height) * m_img_width + col;
+                    assert(col <= m_img_width);
+                    assert(index <= m_img_height * m_img_width);
+                    int color = (int) pix[index].b + (int) pix[index].g + (int) pix[index].r;
+                    if (color < 90)
+                    {
+                        m_emitters[i]->addDrop(m_increment);
+                    }
+                }
+            }
+            // 0.4 is a random constant which I found worked well to make images scale nicely
+            m_curr_height -=  DROP_FREQ * m_img_scale * 4.0;
+            if (m_curr_height < 0)
+                m_curr_height += m_img_height;
+
+        }
+
+        //make continuous flow, add drops to all emitters
+        else if (settings.fountain_pattern == PATTERN_STRIPED)
+        {
+            int stripes = 2 * NUM_STRIPES - 1;
+            if (NUM_STRIPES < 2)
+                stripes = 1;
+            int increment = (int) ((float) NUM_EMITTERS / (float) stripes);
+            int strip_on = 0;
+            for (int i = 0; i < stripes; i++)
+            {
+                //turn stripes on and off
+                if (strip_on % 2 == 0)
+                {
+                    for (int j = i * increment; j < (i + 1) * increment; j++)
+                    {
+                        j = min(j, NUM_EMITTERS);
+                        m_emitters[j]->addDrop(m_increment);
+                    }
+                }
+                strip_on++;
+            }
+        }
+        else
+        {
+            for (int i = 0; i < NUM_EMITTERS; i++)
+                m_emitters[i]->addDrop(m_increment);
+        }
+    }
+
+
+
+    //drop droplets
+    if (settings.cameraZ < DROPLET_THRESHHOLD)
+    {
+        glDisable(GL_TEXTURE_2D);
+        glEnable(GL_DEPTH_TEST);
+        glClear(GL_DEPTH_BUFFER_BIT);
+        glEnable(GL_TEXTURE_CUBE_MAP);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, m_cube_map);
+        glEnable(GL_CULL_FACE);
+
+        // Render with the refraction shader bound
+        glActiveTexture(GL_TEXTURE0);
+
+        for (int i = 0; i < NUM_EMITTERS; i++)
+        {
+
+            Emitter *e = m_emitters[i];
+            e->updateDrops();
+            e->drawDroplets();
+        }
+
+        glEnable(GL_TEXTURE_2D);
+        glDisable(GL_CULL_FACE);
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_TEXTURE_CUBE_MAP);
+    }
+
+    //draw particles
+    else
+    {
+        glBindTexture(GL_TEXTURE_2D, m_particle_tex_id);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+        glDepthMask(false);
+
+        for (int i = 0; i < NUM_EMITTERS; i++)
+        {
+
+            Emitter *e = m_emitters[i];
+            e->updateDrops();
+            e->drawParticles();
+        }
+
+        glDepthMask(true);
+    }
+
+    //paints the front floor panel so droplets don't go in front of water trough
+    //paintFrontFloor();
+
+}
+
+/**
+  Specifies to Qt what to do when the widget needs to be updated.
+  We only want to repaint the onscreen objects.
+**/
+void Canvas3D::tick()
+{
+    update();
 }
 
 void Canvas3D::initializeResources()
@@ -148,8 +282,8 @@ void Canvas3D::initializeResources()
     createShaderPrograms();
     cout << "Loaded shader programs..." << endl;
 
-    createFramebufferObjects(width(), height());
-    cout << "Loaded framebuffer objects..." << endl;
+    //createFramebufferObjects(width(), height());
+    //cout << "Loaded framebuffer objects..." << endl;
 
     cout << " --- Finish Loading Resources ---" << endl;
 }
@@ -180,8 +314,8 @@ void Canvas3D::createShaderPrograms()
                                                                    "../final/shaders/reflect.frag");
     m_shader_programs["refract"] = ResourceLoader::newShaderProgram(ctx, "../final/shaders/refract.vert",
                                                                    "../final/shaders/refract.frag");
-    m_shader_programs["brightpass"] = ResourceLoader::newFragShaderProgram(ctx, "../final/shaders/brightpass.frag");
-    m_shader_programs["blur"] = ResourceLoader::newFragShaderProgram(ctx, "../final/shaders/blur.frag");
+    //m_shader_programs["brightpass"] = ResourceLoader::newFragShaderProgram(ctx, "../final/shaders/brightpass.frag");
+    //m_shader_programs["blur"] = ResourceLoader::newFragShaderProgram(ctx, "../final/shaders/blur.frag");
 }
 
 /**
@@ -346,145 +480,44 @@ void Canvas3D::updateSettings()
     }
 }
 
-
-void Canvas3D::paintGL()
-{
-    // Get the time in seconds
-    //float time = m_increment++ / (float) m_fps;
-    m_increment++;
-
-    // Clear the color and depth buffers to the current glClearColor
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    paintScene();
-
-    int index, col;
-    int time_inc = (int) m_increment % DROP_FREQ;
-
-    if (time_inc  == 0)
-    {
-        if (settings.fountain_pattern != PATTERN_CONTINUOUS && (m_image != NULL))
-        {
-            const BGRA* pix = (BGRA*) m_image->constBits();
-            //const BGRA* pix = (*m_curr_pix);
-            for (int i = 0; i < NUM_EMITTERS; i++)
-            {
-                if (m_curr_height > 0)
-                {
-                    col = (int) (i * m_img_scale);
-                    index = ((int) m_curr_height) * m_img_width + col;
-                    assert(col <= m_img_width);
-                    assert(index <= m_img_height * m_img_width);
-                    int color = (int) pix[index].b + (int) pix[index].g + (int) pix[index].r;
-                    if (color < 90)
-                    {
-                        m_emitters[i]->addDrop(m_increment);
-                    }
-                }
-            }
-            // 0.4 is a random constant which I found worked well to make images scale nicely
-            m_curr_height -=  DROP_FREQ * m_img_scale * 4.0;
-            if (m_curr_height < 0)
-                m_curr_height += m_img_height;
-
-        }
-
-        //make continuous flow, add drops to all emitters
-        else if (settings.fountain_pattern == PATTERN_STRIPED)
-        {
-            int stripes = 2 * NUM_STRIPES - 1;
-            if (NUM_STRIPES < 2)
-                stripes = 1;
-            int increment = (int) ((float) NUM_EMITTERS / (float) stripes);
-            int strip_on = 0;
-            for (int i = 0; i < stripes; i++)
-            {
-                //turn stripes on and off
-                if (strip_on % 2 == 0)
-                {
-                    for (int j = i * increment; j < (i + 1) * increment; j++)
-                    {
-                        j = min(j, NUM_EMITTERS);
-                        m_emitters[j]->addDrop(m_increment);
-                    }
-                }
-                strip_on++;
-            }
-        }
-        else
-        {
-            for (int i = 0; i < NUM_EMITTERS; i++)
-                m_emitters[i]->addDrop(m_increment);
-        }
-    }
-
-
-
-    //drop droplets
-    if (settings.cameraZ < DROPLET_THRESHHOLD)
-    {
-        glDisable(GL_TEXTURE_2D);
-        glEnable(GL_DEPTH_TEST);
-        glClear(GL_DEPTH_BUFFER_BIT);
-        glEnable(GL_TEXTURE_CUBE_MAP);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, m_cube_map);
-        glEnable(GL_CULL_FACE);
-
-        // Render with the refraction shader bound
-        glActiveTexture(GL_TEXTURE0);
-
-        for (int i = 0; i < NUM_EMITTERS; i++)
-        {
-
-            Emitter *e = m_emitters[i];
-            e->updateDrops();
-            e->drawDroplets();
-        }
-
-        glEnable(GL_TEXTURE_2D);
-        glDisable(GL_CULL_FACE);
-        glDisable(GL_DEPTH_TEST);
-        glDisable(GL_TEXTURE_CUBE_MAP);
-    }
-
-    //draw particles
-    else
-    {
-        glBindTexture(GL_TEXTURE_2D, m_particle_tex_id);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-        glDepthMask(false);
-
-        for (int i = 0; i < NUM_EMITTERS; i++)
-        {
-
-            Emitter *e = m_emitters[i];
-            e->updateDrops();
-            e->drawParticles();
-        }
-
-        glDepthMask(true);
-    }
-
-    //paints the front floor panel so droplets don't go in front of water trough
-    paintFrontFloor();
-
-}
-
 /**
-  Specifies to Qt what to do when the widget needs to be updated.
-  We only want to repaint the onscreen objects.
+  Update the camera's specifications.
+  You need to fill in this method.
+  It gets called in resizeGL which get called automatically on intialization
+  and whenever the window is resized.
 **/
-void Canvas3D::tick()
+void Canvas3D::updateCamera(float width, float height)
 {
-    update();
+    if (settings.cameraZ < DROPLET_THRESHHOLD)
+        settings.draw_type = DRAW_DROPLETS;
+    else
+        settings.draw_type = DRAW_PARTICLES;
+
+    m_camera->setAspectRatio( 1.0f * width / height);
+
+    double matrix[16];
+    m_camera->getProjectionMatrix().getTranspose().fillArray(matrix);
+    glMatrixMode(GL_PROJECTION);
+    glLoadMatrixd(matrix);
+    glMatrixMode(GL_MODELVIEW);
+    m_camera->getModelviewMatrix().getTranspose().fillArray(matrix);
+    glLoadMatrixd(matrix);
 }
 
 void Canvas3D::resizeGL(int width, int height)
 {
     // Set the viewport to fill the screen
     glViewport(0, 0, width, height);
+
+    if (width < 1) width = 1;
+    if (height  < 1) height = 1;
+
     // Update the camera
-    updateCamera();
+    updateCamera((float) width, (float) height);
+    for (int i = 0; i < NUM_EMITTERS; i++)
+    {
+         m_emitters[i]->notifySizeChanged(width, height);
+    }
 }
 
 void Canvas3D::settingsChanged() {
@@ -492,214 +525,6 @@ void Canvas3D::settingsChanged() {
 
     // Call superclass (this repaints the scene for you)
     //SupportCanvas3D::settingsChanged();
-}
-
-void Canvas3D::paintScene()
-{
-    //define scene
-    float x_start = -2.5;
-    float y_start = -1.5;
-    float z_start = 0.0;
-
-    float width = 5.0;
-    float height = 3.0;
-    float depth = 2.0;
-
-    float trough_width = 0.8; // how far the trough starts from the x sides
-    float trough_depth = 1.0;
-
-    float x_end = x_start + width;
-    float y_end = y_start + height;
-    float z_end = z_start + depth;
-
-    float light_width = 3.2;
-    float z_light_depth = .2;
-
-    float z_light_start = 1.0;
-    float x_light_start = -1.0 * light_width / 2.0;
-    float x_light_end = light_width / 2.0;
-    float y_light = 1.48;
-
-    float z_light_end = z_light_start + z_light_depth;
-
-    glBindTexture(GL_TEXTURE_2D, m_concrete_back_tex_id);
-
-    glBegin( GL_QUADS );
-    //define back wall
-    glColor3f(1.0, 1.0, 1.0);
-    glTexCoord3f(0.0, 0.0, 0.0); glVertex3f(x_start, y_start, z_start);
-    glTexCoord3f(1.0, 0.0, 0.0); glVertex3f(x_end, y_start, z_start);
-    glTexCoord3f(1.0, 1.0, 0.0); glVertex3f(x_end, y_end, z_start);
-    glTexCoord3f(0.0, 1.0, 0.0); glVertex3f(x_start, y_end, z_start);
-    glEnd();
-
-    glBindTexture(GL_TEXTURE_2D, m_concrete_ceil_tex_id);
-
-    glBegin( GL_QUADS );
-    //define top wall
-    glTexCoord3f(0.0, 0.0, 0.0); glVertex3f(x_start, y_end, z_start);
-    glTexCoord3f(1.0, 0.0, 0.0); glVertex3f(x_start, y_end, z_start);
-    glTexCoord3f(1.0, 1.0, 0.0); glVertex3f(x_end, y_end, z_end);
-    glTexCoord3f(0.0, 1.0, 0.0); glVertex3f(x_end, y_end, z_end);
-    glEnd();
-
-    /**************
-    *     FLOOR
-    ***************/
-
-    glBindTexture(GL_TEXTURE_2D, m_concrete_floor_tex_id);
-
-    glBegin( GL_QUADS );
-    //define back trough wall
-    glColor3f(0.5, 0.5, 0.5);
-    glTexCoord3f(0.0, 0.0, 0.0); glVertex3f(x_start + trough_width, y_start - trough_depth, z_end / 4.0);
-    glTexCoord3f(1.0, 0.0, 0.0); glVertex3f(x_end - trough_width, y_start - trough_depth, z_end / 4.0);
-    glTexCoord3f(1.0, 1.0, 0.0); glVertex3f(x_end - trough_width, y_start, z_end / 4.0);
-    glTexCoord3f(0.0, 1.0, 0.0); glVertex3f(x_start + trough_width, y_start, z_end / 4.0);
-    glEnd();
-
-    glBegin( GL_QUADS );
-    //define left trough wall
-    glTexCoord3f(0.0, 0.0, 0.0); glVertex3f(x_start + trough_width, y_start - trough_depth, z_end / 2.0);
-    glTexCoord3f(1.0, 0.0, 0.0); glVertex3f(x_start + trough_width, y_start - trough_depth, z_end / 4.0);
-    glTexCoord3f(1.0, 1.0, 0.0); glVertex3f(x_start + trough_width, y_start, z_end / 4.0);
-    glTexCoord3f(0.0, 1.0, 0.0); glVertex3f(x_start + trough_width, y_start, z_end / 2.0);
-    glEnd();
-
-    glBegin( GL_QUADS );
-    //define right trough wall
-    glTexCoord3f(0.0, 0.0, 0.0); glVertex3f(x_end - trough_width, y_start - trough_depth, z_end / 4.0);
-    glTexCoord3f(1.0, 0.0, 0.0); glVertex3f(x_end - trough_width, y_start - trough_depth, z_end / 2.0);
-    glTexCoord3f(1.0, 1.0, 0.0); glVertex3f(x_end - trough_width, y_start, z_end / 2.0);
-    glTexCoord3f(0.0, 1.0, 0.0); glVertex3f(x_end - trough_width, y_start, z_end / 4.0);
-    glEnd();
-
-    glBegin( GL_QUADS );
-    //define back floor panel
-    glColor3f(1.0, 1.0, 1.0);
-    glTexCoord3f(0.0, 0.0, 0.0); glVertex3f(x_end, y_start, z_start);
-    glTexCoord3f(1.0, 0.0, 0.0); glVertex3f(x_start, y_start, z_start);
-    glTexCoord3f(1.0, 1.0, 0.0); glVertex3f(x_start, y_start, z_end / 4.0);
-    glTexCoord3f(0.0, 1.0, 0.0); glVertex3f(x_end, y_start, z_end / 4.0);
-    glEnd();
-
-    glBegin( GL_QUADS );
-    //define side panel left
-    glTexCoord3f(0.0, 0.0, 0.0); glVertex3f(x_start + trough_width, y_start, z_end / 4.0);
-    glTexCoord3f(1.0, 0.0, 0.0); glVertex3f(x_start, y_start, z_end / 4.0);
-    glTexCoord3f(1.0, 1.0, 0.0); glVertex3f(x_start, y_start, z_end / 2.0);
-    glTexCoord3f(0.0, 1.0, 0.0); glVertex3f(x_start + trough_width, y_start, z_end / 2.0);
-    glEnd();
-
-    glBegin( GL_QUADS );
-    //define side panel right
-    glTexCoord3f(0.0, 0.0, 0.0); glVertex3f(x_end, y_start, z_end / 4.0);
-    glTexCoord3f(1.0, 0.0, 0.0); glVertex3f(x_end - trough_width, y_start, z_end / 4.0);
-    glTexCoord3f(1.0, 1.0, 0.0); glVertex3f(x_end - trough_width, y_start, z_end / 2.0);
-    glTexCoord3f(0.0, 1.0, 0.0); glVertex3f(x_end, y_start, z_end / 2.0);
-    glEnd();
-
-    /**************
-    *  END FLOOR
-    ***************/
-
-    glBindTexture(GL_TEXTURE_2D, m_concrete_right_tex_id);
-
-    glBegin( GL_QUADS );
-    //define right wall
-    //glColor3f(0.0, 0.0, 0.75);
-    glTexCoord3f(0.0, 0.0, 0.0); glVertex3f(x_end, y_start, z_start);
-    glTexCoord3f(1.0, 0.0, 0.0); glVertex3f(x_end, y_start, z_end);
-    glTexCoord3f(1.0, 1.0, 0.0); glVertex3f(x_end, y_end, z_end);
-    glTexCoord3f(0.0, 1.0, 0.0); glVertex3f(x_end, y_end, z_start);
-    glEnd();
-
-    glBindTexture(GL_TEXTURE_2D, m_concrete_left_tex_id);
-
-    glBegin( GL_QUADS );
-    //define left wall
-    //glColor3f(0.0, 0.75, 0.0);
-    glTexCoord3f(0.0, 0.0, 0.0); glVertex3f(x_start, y_start, z_end);
-    glTexCoord3f(1.0, 0.0, 0.0); glVertex3f(x_start, y_start, z_start);
-    glTexCoord3f(1.0, 1.0, 0.0); glVertex3f(x_start, y_end, z_start);
-    glTexCoord3f(0.0, 1.0, 0.0); glVertex3f(x_start, y_end, z_end);
-    glEnd();
-
-    glBindTexture(GL_TEXTURE_2D, m_lightstrip_tex_id);
-
-    glBegin( GL_QUADS );
-    //define light strip
-    glColor3f(1.0, 1.0, 1.0);
-    glTexCoord3f(0.0, 0.0, 0.0); glVertex3f(x_light_start, y_light, z_light_start);
-    glTexCoord3f(1.0, 0.0, 0.0); glVertex3f(x_light_end, y_light, z_light_start);
-    glTexCoord3f(1.0, 1.0, 0.0); glVertex3f(x_light_end, y_light, z_light_end);
-    glTexCoord3f(0.0, 1.0, 0.0); glVertex3f(x_light_start, y_light, z_light_end);
-    glEnd();
-
-    glBindTexture(GL_TEXTURE_2D, m_concrete_floor_tex_id);
-
-    glBegin( GL_QUADS );
-    //define front floor panel
-    glTexCoord3f(0.0, 0.0, 0.0); glVertex3f(x_end, y_start, z_end / 2.0);
-    glTexCoord3f(1.0, 0.0, 0.0); glVertex3f(x_start, y_start, z_end / 2.0);
-    glTexCoord3f(1.0, 1.0, 0.0); glVertex3f(x_start, y_start, z_end);
-    glTexCoord3f(0.0, 1.0, 0.0); glVertex3f(x_end, y_start, z_end);
-    glEnd();
-}
-
-void Canvas3D::paintFrontFloor()
-{
-
-    float x_start = -2.5;
-    float y_start = -1.5;
-    float z_start = 0.0;
-
-    float width = 5.0;
-    float depth = 2.0;
-
-    float x_end = x_start + width;
-    float z_end = z_start + depth;
-
-    glBindTexture(GL_TEXTURE_2D, m_concrete_floor_tex_id);
-
-    glDisable (GL_BLEND);
-    glBegin( GL_QUADS );
-    //define front floor panel
-    glTexCoord3f(0.0, 0.0, 0.0); glVertex3f(x_end, y_start, z_end / 2.0);
-    glTexCoord3f(1.0, 0.0, 0.0); glVertex3f(x_start, y_start, z_end / 2.0);
-    glTexCoord3f(1.0, 1.0, 0.0); glVertex3f(x_start, y_start, z_end);
-    glTexCoord3f(0.0, 1.0, 0.0); glVertex3f(x_end, y_start, z_end);
-    glEnd();
-    glEnable(GL_BLEND);
-
-}
-
-/**
-  Update the camera's specifications.
-  You need to fill in this method.
-  It gets called in resizeGL which get called automatically on intialization
-  and whenever the window is resized.
-**/
-void Canvas3D::updateCamera()
-{
-    if (settings.cameraZ < DROPLET_THRESHHOLD)
-        settings.draw_type = DRAW_DROPLETS;
-    else
-        settings.draw_type = DRAW_PARTICLES;
-
-    float w = width();
-    float h = height();
-    float aspectRatio = 1.0f * w / h;
-    // Reset the coordinate system before modifying
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    gluPerspective(m_camera.fovy, aspectRatio, m_camera.near, m_camera.far);
-
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    gluLookAt(m_camera.eye.x, m_camera.eye.y, settings.cameraZ,
-              m_camera.center.x, m_camera.center.y, m_camera.center.z,
-              m_camera.up.x, m_camera.up.y, m_camera.up.z);
 }
 
 void Canvas3D::mousePressEvent(QMouseEvent *event)
@@ -746,3 +571,200 @@ void Canvas3D::mouseDragged(int x, int y)
     }
 }
 
+void Canvas3D::paintScene()
+{
+    //define scene
+    float x_start = BOX_X_START;
+    float y_start = BOX_Y_START;
+    float z_start = BOX_Z_START;
+
+    float width = BOX_WIDTH;
+    float height = BOX_HEIGHT;
+    float depth = BOX_DEPTH;
+
+    float trough_width = 0.8; // how far the trough starts from the x sides
+    float trough_depth = 1.0;
+
+    float x_end = x_start + width;
+    float y_end = y_start + height;
+    float z_end = z_start + depth;
+
+    float light_width = FTN_WIDTH + 0.2f;
+    float z_light_depth = 0.2f;
+
+    float z_light_start = BOX_Z_START + (BOX_DEPTH / 2.0f);
+    float x_light_start = -1.0f * light_width / 2.0f;
+    float x_light_end = light_width / 2.0;
+    float y_light = y_end - 0.01f;
+    //float y_light = 1.48;
+
+    float z_light_end = z_light_start + z_light_depth;
+
+    /**************
+    *     CEIL
+    ***************/
+
+    glBindTexture(GL_TEXTURE_2D, m_concrete_ceil_tex_id);
+
+    glBegin( GL_QUADS );
+    //define ceiling
+    glTexCoord3f(0.0, 0.0, 0.0); glVertex3f(x_start , y_end, z_end);
+    glTexCoord3f(1.0, 0.0, 0.0); glVertex3f(x_start, y_end, z_start);
+    glTexCoord3f(1.0, 1.0, 0.0); glVertex3f(x_end, y_end, z_start);
+    glTexCoord3f(0.0, 1.0, 0.0); glVertex3f(x_end, y_end, z_end);
+    glEnd();
+
+    /**************
+    *     LIGHT_STRIP
+    ***************/
+
+    glBindTexture(GL_TEXTURE_2D, m_lightstrip_tex_id);
+
+    glBegin( GL_QUADS );
+    //define light strip
+    glColor3f(1.0, 1.0, 1.0);
+    glTexCoord3f(0.0, 0.0, 0.0); glVertex3f(x_light_start, y_light, z_light_start);
+    glTexCoord3f(1.0, 0.0, 0.0); glVertex3f(x_light_end, y_light, z_light_start);
+    glTexCoord3f(1.0, 1.0, 0.0); glVertex3f(x_light_end, y_light, z_light_end);
+    glTexCoord3f(0.0, 1.0, 0.0); glVertex3f(x_light_start, y_light, z_light_end);
+    glEnd();
+
+    glDisable(GL_BLEND);
+
+    /**************
+    *     SIDES
+    ***************/
+
+    glBindTexture(GL_TEXTURE_2D, m_concrete_right_tex_id);
+
+    glBegin( GL_QUADS );
+    //define right wall
+    glTexCoord3f(0.0, 0.0, 0.0); glVertex3f(x_end, y_start - EPSILON, z_start);
+    glTexCoord3f(1.0, 0.0, 0.0); glVertex3f(x_end, y_start - EPSILON, z_end);
+    glTexCoord3f(1.0, 1.0, 0.0); glVertex3f(x_end, y_end + EPSILON, z_end);
+    glTexCoord3f(0.0, 1.0, 0.0); glVertex3f(x_end, y_end + EPSILON, z_start);
+    glEnd();
+
+
+    glBindTexture(GL_TEXTURE_2D, m_concrete_left_tex_id);
+
+    glBegin( GL_QUADS );
+    //define left wall
+    glTexCoord3f(0.0, 0.0, 0.0); glVertex3f(x_start, y_start - EPSILON, z_end);
+    glTexCoord3f(1.0, 0.0, 0.0); glVertex3f(x_start, y_start - EPSILON, z_start);
+    glTexCoord3f(1.0, 1.0, 0.0); glVertex3f(x_start, y_end + EPSILON, z_start);
+    glTexCoord3f(0.0, 1.0, 0.0); glVertex3f(x_start, y_end + EPSILON, z_end);
+    glEnd();
+
+    glBindTexture(GL_TEXTURE_2D, m_concrete_back_tex_id);
+
+    glBegin( GL_QUADS );
+    //define back wall
+    glColor3f(1.0, 1.0, 1.0);
+    glTexCoord3f(0.0, 0.0, 0.0); glVertex3f(x_start, y_start - EPSILON, z_start);
+    glTexCoord3f(1.0, 0.0, 0.0); glVertex3f(x_end, y_start - EPSILON, z_start);
+    glTexCoord3f(1.0, 1.0, 0.0); glVertex3f(x_end, y_end + EPSILON, z_start);
+    glTexCoord3f(0.0, 1.0, 0.0); glVertex3f(x_start, y_end + EPSILON, z_start);
+    glEnd();
+
+    /**************
+    *     FLOOR
+    ***************/
+
+    glBindTexture(GL_TEXTURE_2D, m_concrete_floor_tex_id);
+
+    glBegin( GL_QUADS );
+    //define back trough wall
+    glColor3f(0.5, 0.5, 0.5);
+    glTexCoord3f(0.0, 0.0, 0.0); glVertex3f(x_start + trough_width - EPSILON, y_start - trough_depth, z_end / 4.0);
+    glTexCoord3f(1.0, 0.0, 0.0); glVertex3f(x_end - trough_width, y_start - trough_depth, z_end / 4.0);
+    glTexCoord3f(1.0, 1.0, 0.0); glVertex3f(x_end - trough_width, y_start, z_end / 4.0);
+    glTexCoord3f(0.0, 1.0, 0.0); glVertex3f(x_start + trough_width - EPSILON, y_start, z_end / 4.0);
+    glEnd();
+
+    glBegin( GL_QUADS );
+    //define left trough wall
+    glTexCoord3f(0.0, 0.0, 0.0); glVertex3f(x_start + trough_width, y_start - trough_depth, z_end / 2.0);
+    glTexCoord3f(1.0, 0.0, 0.0); glVertex3f(x_start + trough_width, y_start - trough_depth, z_end / 4.0);
+    glTexCoord3f(1.0, 1.0, 0.0); glVertex3f(x_start + trough_width, y_start, z_end / 4.0);
+    glTexCoord3f(0.0, 1.0, 0.0); glVertex3f(x_start + trough_width, y_start, z_end / 2.0);
+    glEnd();
+
+    glBegin( GL_QUADS );
+    //define right trough wall
+    glTexCoord3f(0.0, 0.0, 0.0); glVertex3f(x_end - trough_width, y_start - trough_depth, z_end / 4.0);
+    glTexCoord3f(1.0, 0.0, 0.0); glVertex3f(x_end - trough_width, y_start - trough_depth, z_end / 2.0);
+    glTexCoord3f(1.0, 1.0, 0.0); glVertex3f(x_end - trough_width, y_start, z_end / 2.0);
+    glTexCoord3f(0.0, 1.0, 0.0); glVertex3f(x_end - trough_width, y_start, z_end / 4.0);
+    glEnd();
+
+    glBegin( GL_QUADS );
+    //define back floor panel
+    glColor3f(1.0, 1.0, 1.0);
+    glTexCoord3f(0.0, 0.0, 0.0); glVertex3f(x_end, y_start, z_start);
+    glTexCoord3f(1.0, 0.0, 0.0); glVertex3f(x_start, y_start, z_start);
+    glTexCoord3f(1.0, 1.0, 0.0); glVertex3f(x_start, y_start, z_end / 4.0);
+    glTexCoord3f(0.0, 1.0, 0.0); glVertex3f(x_end, y_start, z_end / 4.0);
+    glEnd();
+
+    glBindTexture(GL_TEXTURE_2D, m_concrete_floor2_tex_id);
+
+    glBegin( GL_QUADS );
+    //define side panel left
+    glTexCoord3f(0.0, 0.0, 0.0); glVertex3f(x_start + trough_width, y_start, z_end / 4.0);
+    glTexCoord3f(1.0, 0.0, 0.0); glVertex3f(x_start, y_start, z_end / 4.0);
+    glTexCoord3f(1.0, 1.0, 0.0); glVertex3f(x_start, y_start, z_end / 2.0);
+    glTexCoord3f(0.0, 1.0, 0.0); glVertex3f(x_start + trough_width, y_start, z_end / 2.0);
+    glEnd();
+
+    glBegin( GL_QUADS );
+    //define side panel right
+    glTexCoord3f(0.0, 0.0, 0.0); glVertex3f(x_end, y_start, z_end / 4.0);
+    glTexCoord3f(1.0, 0.0, 0.0); glVertex3f(x_end - trough_width, y_start, z_end / 4.0);
+    glTexCoord3f(1.0, 1.0, 0.0); glVertex3f(x_end - trough_width, y_start, z_end / 2.0);
+    glTexCoord3f(0.0, 1.0, 0.0); glVertex3f(x_end, y_start, z_end / 2.0);
+    glEnd();
+
+    glBindTexture(GL_TEXTURE_2D, m_concrete_floor_tex_id);
+
+    glBegin( GL_QUADS );
+    //define front floor panel
+    glTexCoord3f(1.0, 1.0, 0.0); glVertex3f(x_start, y_start, z_end);
+    glTexCoord3f(0.0, 1.0, 0.0); glVertex3f(x_end, y_start, z_end);
+    glTexCoord3f(0.0, 0.0, 0.0); glVertex3f(x_end, y_start, z_end / 2.0);
+    glTexCoord3f(1.0, 0.0, 0.0); glVertex3f(x_start, y_start, z_end / 2.0);
+    glEnd();
+
+    /**************
+    *  END FLOOR
+    ***************/
+
+    glEnable(GL_BLEND);
+}
+
+void Canvas3D::paintFrontFloor()
+{
+
+    float x_start = -2.5;
+    float y_start = -1.5;
+    float z_start = 0.0;
+
+    float width = 5.0;
+    float depth = 2.0;
+
+    float x_end = x_start + width;
+    float z_end = z_start + depth;
+
+    glBindTexture(GL_TEXTURE_2D, m_concrete_floor_tex_id);
+
+    glDisable (GL_BLEND);
+    glBegin( GL_QUADS );
+    //define front floor panel
+    glTexCoord3f(0.0, 0.0, 0.0); glVertex3f(x_end, y_start, z_end / 2.0);
+    glTexCoord3f(1.0, 0.0, 0.0); glVertex3f(x_start, y_start, z_end / 2.0);
+    glTexCoord3f(1.0, 1.0, 0.0); glVertex3f(x_start, y_start, z_end);
+    glTexCoord3f(0.0, 1.0, 0.0); glVertex3f(x_end, y_start, z_end);
+    glEnd();
+    glEnable(GL_BLEND);
+
+}

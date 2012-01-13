@@ -31,7 +31,8 @@ void Settings::loadSettingsOrDefaults()
     fillMode = s.value("fillMode", FILL_SHADED).toInt();
     lightingEnabled = s.value("lightingEnabled", true).toBool();
     shadingMode = s.value("shadingMode", SHADING_SMOOTH).toInt();
-    fountain_pattern = s.value("fountainPattern", PATTERN_CONTINUOUS).toInt();
+//    fountain_pattern = s.value("fountainPattern", PATTERN_CONTINUOUS).toInt();
+    fountain_pattern = PATTERN_CONTINUOUS;
     dropSlowDown = 1.0;  //value to slow down, starts off realtime
     cameraZ = CAM_MAX_DIST;   //ranges from 0.02 to 5.0
 

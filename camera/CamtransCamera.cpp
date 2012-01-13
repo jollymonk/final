@@ -20,12 +20,20 @@
 
 CamtransCamera::CamtransCamera()
 {
+
+//    m_camera.eye.x = 0.0f, m_camera.eye.y = 0.0f, m_camera.eye.z = 5.0f;
+//        m_camera.center.x = 0.0f, m_camera.center.y = 0.0f, m_camera.center.z = 0.0f;
+//        m_camera.up.x = 0.0f, m_camera.up.y = 1.0f, m_camera.up.z = 0.0f;
+//        m_camera.fovy = 45.0f, m_camera.near = 0.02f, m_camera.far = 1000.0f;
+
+
     //initial setup
-    m_near = 1.0;
-    m_far = 30.0;
+    m_near = 0.02;
+    m_far = 1000.0;
     setAspectRatio(1.0);
-    setHeightAngle(60.0);
-    m_position = Vector4(2.0, 2.0, 2.0, 1.0);
+    //setHeightAngle(60.0);
+    setHeightAngle(45.0);
+    m_position = Vector4(0.0, 0.0, settings.cameraZ, 1.0);
     m_look = Vector4(0.0, 0.0, -1.0, 0.0);
     m_up = Vector4(0.0, 1.0, 0.0, 0.0);
 

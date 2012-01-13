@@ -17,12 +17,7 @@
 #include "fountain/Emitter.h"
 #include "resourceloader.h"
 
-struct LabCamera {
-    Vector3 eye, center, up;
-    Vector4 look;
-    float fovy, near, far;
-    Vector4 u, v, w;
-};
+class CamtransCamera;
 
 class Shape;
 
@@ -44,7 +39,7 @@ public:
     virtual void initializeGL();
     virtual void paintGL();
     void updateSettings();
-    void updateCamera();
+    void updateCamera(float width, float height);
 
     //! This will be called when the settings have changed
     virtual void settingsChanged();
@@ -82,7 +77,7 @@ protected slots:
     void tick();
 
 private:
-    LabCamera m_camera;
+    CamtransCamera *m_camera;
 
     //fountain
     Emitter** m_emitters;
@@ -120,6 +115,7 @@ private:
     GLuint m_concrete_left_tex_id;
     GLuint m_concrete_right_tex_id;
     GLuint m_concrete_floor_tex_id;
+    GLuint m_concrete_floor2_tex_id;
     GLuint m_concrete_ceil_tex_id;
     GLuint m_lightstrip_tex_id;
     GLuint m_particle_tex_id;

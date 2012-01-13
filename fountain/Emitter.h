@@ -9,6 +9,7 @@
 #include "Settings.h"
 
 class Sphere;
+class CamtransCamera;
 
 using namespace std;
 
@@ -25,7 +26,7 @@ struct Droplet
 class Emitter
 {
 public:
-    Emitter(double x_loc, QHash<QString, QGLShaderProgram *> shader_programs, GLuint skybox, GLuint cube_map);
+    Emitter(double x_loc, CamtransCamera *camera, QHash<QString, QGLShaderProgram *> shader_programs, GLuint skybox, GLuint cube_map);
     ~Emitter();
 
     //updates the drops, passing in the change in velocity (for slowing time sim)
@@ -35,16 +36,21 @@ public:
     void drawDroplets();
     void setTexture(GLuint tex_id);
     void notifyMouseEvent(int x, int y);
-    static float dist(int x1, int y1, int x2, int y2);
+    void notifySizeChanged(int width, int height);
+    static float dist(float x1, float y1, float x2, float y2);
+
 
 protected:
+    Vector3 getFountainCoord(int x, int y);
 
+    CamtransCamera *m_camera;
     double m_x_loc;
     QList<Droplet> *m_active_drops;
     GLuint m_tex_id;
+    Sphere *m_sphere;
+
     int m_num_consec_drops;
     float last_drop_time;
-    Sphere *m_sphere;
     int m_curr_stacks;
     int m_curr_slices;
 
@@ -54,8 +60,8 @@ protected:
     GLuint m_cube_map; // cubeMap texture ID
     int m_time_since_drag;   //time since last mouse event, true if > 0
     bool m_mouse_input; //bool of whether to include mouse input
-    int m_mouse_x;
-    int m_mouse_y;
+    Vector3 p_mouse_click;
+    int m_width, m_height;
 };
 
 #endif // EMITTER_H

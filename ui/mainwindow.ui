@@ -6,28 +6,35 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>600</width>
-    <height>775</height>
+    <width>426</width>
+    <height>673</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>CS 123: Introduction to Computer Graphics</string>
+   <string>CS123 Final Project</string>
   </property>
-  <property name="dockNestingEnabled">
-   <bool>false</bool>
-  </property>
-  <property name="dockOptions">
-   <set>QMainWindow::AnimatedDocks</set>
-  </property>
-  <widget class="QWidget" name="centralWidget"/>
+  <widget class="QWidget" name="canvas3D">
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Ignored" vsizetype="Ignored">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+  </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>600</width>
+     <width>426</width>
      <height>23</height>
     </rect>
+   </property>
+   <property name="mouseTracking">
+    <bool>false</bool>
+   </property>
+   <property name="acceptDrops">
+    <bool>false</bool>
    </property>
    <widget class="QMenu" name="menuFile">
     <property name="title">
@@ -45,24 +52,105 @@
    <addaction name="menuFile"/>
    <addaction name="menuToolbars"/>
   </widget>
-  <widget class="QDockWidget" name="settingsDock">
+  <widget class="QDockWidget" name="settingsDock_2">
+   <property name="minimumSize">
+    <size>
+     <width>151</width>
+     <height>133</height>
+    </size>
+   </property>
    <attribute name="dockWidgetArea">
     <number>1</number>
    </attribute>
-   <widget class="QWidget" name="settingsDockContents">
-    <widget class="QGroupBox" name="groupBox">
-     <property name="geometry">
-      <rect>
-       <x>40</x>
-       <y>70</y>
-       <width>120</width>
-       <height>80</height>
-      </rect>
-     </property>
-     <property name="title">
-      <string>GroupBox</string>
-     </property>
-    </widget>
+   <widget class="QWidget" name="settingsDockContent">
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <item>
+      <widget class="QGroupBox" name="settingsTime">
+       <property name="title">
+        <string>Time</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QGroupBox" name="settingsCamera">
+       <property name="title">
+        <string>Camera</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QGroupBox" name="fountainPattern">
+       <property name="title">
+        <string>Fountain Pattern</string>
+       </property>
+       <widget class="QRadioButton" name="patternContinuous">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>30</y>
+          <width>98</width>
+          <height>20</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Continuous</string>
+        </property>
+       </widget>
+       <widget class="QRadioButton" name="patternFan">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>60</y>
+          <width>98</width>
+          <height>20</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Fan</string>
+        </property>
+       </widget>
+       <widget class="QRadioButton" name="patternZebra">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>90</y>
+          <width>98</width>
+          <height>20</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Zebra</string>
+        </property>
+       </widget>
+       <widget class="QRadioButton" name="patternCheckered">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>120</y>
+          <width>98</width>
+          <height>20</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Checkered</string>
+        </property>
+       </widget>
+       <widget class="QRadioButton" name="patternOther">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>150</y>
+          <width>98</width>
+          <height>20</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Other</string>
+        </property>
+       </widget>
+      </widget>
+     </item>
+    </layout>
    </widget>
   </widget>
   <action name="actionSave">

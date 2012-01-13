@@ -2,8 +2,9 @@
 #include "Emitter.h"
 #include "CS123Common.h"
 #include "Sphere.h"
+#include "camera/CamtransCamera.h"
 
-Emitter::Emitter(double x_loc, QHash<QString, QGLShaderProgram *> shader_programs,
+Emitter::Emitter(double x_loc, CamtransCamera *camera, QHash<QString, QGLShaderProgram *> shader_programs,
                  GLuint skybox, GLuint cube_map)
 {
     m_x_loc = x_loc;
@@ -11,6 +12,7 @@ Emitter::Emitter(double x_loc, QHash<QString, QGLShaderProgram *> shader_program
     m_num_consec_drops = 0;
     last_drop_time = 0.0;
 
+    m_camera = camera;
     m_shader_programs = shader_programs;
     m_skybox = skybox;
     m_cube_map = cube_map;
@@ -36,9 +38,8 @@ void Emitter::addDrop(float time)
         m_num_consec_drops++;
     last_drop_time = time;
 
-
     Droplet d;
-    d.init_pos = Vector3(m_x_loc, FTN_TOP - .01, FTN_DEPTH);
+    d.init_pos = Vector3(m_x_loc, FTN_TOP, FTN_DEPTH);
     d.curr_pos = Vector3(m_x_loc, FTN_TOP - .01, FTN_DEPTH);
     d.velocity = Vector3(0.0, -0.008, 0.0);
     d.num_drops_below = min(MAX_CONSEC_DROPS, m_num_consec_drops);
@@ -149,29 +150,38 @@ void Emitter::updateDrops()
     {
         m_time_since_drag--;
         m_mouse_input = true;
-        cout << "time " << m_time_since_drag << endl;
-        cout << "mouse x " << m_mouse_x << endl;
     }
 
     //"real time"
-    float pos_inc;
-    float dist;
+    double pos_inc;
+    Vector3 click_to_point;
+    double dist, dist_perc, x_click_force, y_click_force;
 
     for (int i = 0; i < m_active_drops->size(); i++)
     {
         //update mouse input
-        if (m_mouse_input == true && (abs(m_x_loc - m_mouse_x) < CLICK_RADIUS))
+        if (m_mouse_input == true && (fabs(m_x_loc - p_mouse_click.x) < CLICK_RADIUS))
         {
-            cout << m_time_since_drag << endl;
-            cout << "Calculating mouse input " << endl;
-            dist = Emitter::dist(m_mouse_x, m_mouse_y,
-                                       m_active_drops->at(i).curr_pos.x, m_active_drops->at(i).curr_pos.y);
+            click_to_point = m_active_drops->at(i).curr_pos - p_mouse_click;
+            dist = click_to_point.getMagnitude();
+
             if (dist < CLICK_RADIUS)
             {
-                Vector2 click_force = Vector2(CLICK_RADIUS - (m_active_drops->at(i).curr_pos.x - m_mouse_x),
-                                              CLICK_RADIUS - (m_active_drops->at(i).curr_pos.y - m_mouse_y));
-                m_active_drops->at(i).velocity.x += click_force.x;
-                m_active_drops->at(i).velocity.y += click_force.y;
+                click_to_point.y += 0.001;
+                click_to_point = click_to_point.getNormalized();
+                dist_perc = ((CLICK_RADIUS - dist) / CLICK_RADIUS);
+                dist_perc *= min(((dist_perc * 5.0) / ((dist/ CLICK_RADIUS))), 0.005);
+                click_to_point = click_to_point * dist_perc;
+                if (click_to_point.y < 0 )
+                    click_to_point *= dist_perc;
+
+                x_click_force = click_to_point.x * 0.05;
+                y_click_force = click_to_point.y;
+
+
+                m_active_drops->at(i).velocity.x += x_click_force;
+                m_active_drops->at(i).velocity.y += y_click_force;
+                m_active_drops->at(i).velocity.y = min(m_active_drops->at(i).velocity.y, 0.001);
             }
         }
 
@@ -179,7 +189,7 @@ void Emitter::updateDrops()
         pos_inc = m_active_drops->at(i).velocity.y + (2.0 * urand() - 1.0) * Y_VARIATION;
         m_active_drops->at(i).curr_pos.y += pos_inc * settings.dropSlowDown;
         m_active_drops->at(i).curr_pos.y = min(m_active_drops->at(i).curr_pos.y, FTN_TOP);
-        //m_active_drops->at(i).curr_pos.x += m_active_drops->at(i).velocity.x;
+        m_active_drops->at(i).curr_pos.x += m_active_drops->at(i).velocity.x;
         m_active_drops->at(i).velocity.y -= ACCELERATION;
         m_active_drops->at(i).squish += m_active_drops->at(i).squish_velocity * settings.dropSlowDown;
 
@@ -189,7 +199,6 @@ void Emitter::updateDrops()
         else if (m_active_drops->at(i).squish < .6)
             m_active_drops->at(i).squish_velocity += .0001;
     }
-
     for (int i = 0; i < m_active_drops->size(); i++)
     {
         if (m_active_drops->at(i).curr_pos.y < (double) FTN_BOTTOM)
@@ -204,14 +213,34 @@ void Emitter::setTexture(GLuint tex_id)
 
 void Emitter::notifyMouseEvent(int x, int y)
 {
-    m_time_since_drag = 3;
-    m_mouse_x = x;
-    m_mouse_y = y;
+    m_mouse_input = true;
+    m_time_since_drag = 1;
+    p_mouse_click = getFountainCoord(x, y);
 }
 
-float Emitter::dist(int x1, int y1, int x2, int y2) {
-   int x_dist = x2 - x1;
-   int y_dist = y2 - y1;
+void Emitter::notifySizeChanged(int width, int height) {
+    m_width = width;
+    m_height = height;
+}
+
+float Emitter::dist(float x1, float y1, float x2, float y2) {
+   float x_dist = x2 - x1;
+   float y_dist = y2 - y1;
    float dist = sqrt(x_dist * x_dist + y_dist * y_dist);
-   return dist;
+   return fabs(dist);
+}
+
+Vector3 Emitter::getFountainCoord(int x, int y) {
+    float film_x, film_y, film_z = -1.0;
+    Vector4 p_film, p_world, v_dir;
+    film_y = -1.0 * ((2.0 * (REAL) y)/ (REAL) m_height) + 1.0;
+    film_x = ((2.0 * (REAL) x)/ (REAL) m_width) - 1.0;
+    p_film = Vector4(film_x, film_y, film_z, 1.0);
+    Vector4 eye = m_camera->getPosition();
+    p_world = m_camera->getFilmtoWorldMatrix() * p_film;
+    v_dir = eye - p_world;
+    v_dir = v_dir.getNormalized();
+    float dist = fabs(FTN_DEPTH - eye.z) / v_dir.z;
+    Vector3 ftn_point = Vector3(eye.x - dist * v_dir.x, eye.y - dist * v_dir.y, eye.z - dist * v_dir.z);
+    return ftn_point;
 }
